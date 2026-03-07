@@ -1,11 +1,29 @@
 #!/usr/bin/env python3
 import json
+import re
+import html as html_mod
 from pathlib import Path
 from datetime import datetime
 
 ROOT = Path(__file__).resolve().parents[1]
 LOG_DIR = ROOT / 'logs'
 LOG_DIR.mkdir(exist_ok=True)
+
+ALLOWED_TARGETS = {'home', 'events', 'community', 'partners'}
+DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+
+
+def strip_html(text: str) -> str:
+    """Remove HTML tags and decode entities from untrusted input."""
+    return html_mod.unescape(re.sub(r'<[^>]+>', '', text))
+
+
+def safe_content_path(filename: str) -> Path:
+    """Resolve a path under content/ and verify it stays within bounds."""
+    target = (ROOT / 'content' / filename).resolve()
+    if not str(target).startswith(str((ROOT / 'content').resolve())):
+        raise ValueError(f'Path traversal blocked: {filename}')
+    return target
 
 
 def parse_frontmatter(text: str):
@@ -39,8 +57,8 @@ def append_log(entry: dict):
 
 
 def handle_add_link(target: str, payload: dict):
-    label = payload.get('label', '').strip()
-    url = payload.get('url', '').strip()
+    label = strip_html(payload.get('label', '')).strip()
+    url = strip_html(payload.get('url', '')).strip()
     if not label or not url.startswith('https://'):
         raise ValueError('add_link requires payload.label and payload.url (https://)')
 
@@ -71,8 +89,8 @@ def handle_add_link(target: str, payload: dict):
 
 
 def handle_update_cta(target: str, payload: dict):
-    cta_label = payload.get('cta_label', '').strip()
-    cta_url = payload.get('cta_url', '').strip()
+    cta_label = strip_html(payload.get('cta_label', '')).strip()
+    cta_url = strip_html(payload.get('cta_url', '')).strip()
     if not cta_label or not cta_url.startswith('https://'):
         raise ValueError('update_cta requires payload.cta_label and payload.cta_url (https://)')
 
@@ -93,17 +111,20 @@ def handle_update_cta(target: str, payload: dict):
 
 
 def handle_update_event(payload: dict):
-    title = payload.get('event_title', '').strip()
-    date = payload.get('event_date', '').strip()
-    location = payload.get('event_location', 'Des Moines, IA').strip()
-    url = payload.get('url', '').strip()
-    summary = payload.get('event_summary', '').strip() or 'Event update.'
+    title = strip_html(payload.get('event_title', '')).strip()
+    date = strip_html(payload.get('event_date', '')).strip()
+    location = strip_html(payload.get('event_location', 'Des Moines, IA')).strip()
+    url = strip_html(payload.get('url', '')).strip()
+    summary = strip_html(payload.get('event_summary', '')).strip() or 'Event update.'
 
     if not title or not date or not url.startswith('https://'):
         raise ValueError('update_event requires event_title, event_date, and payload.url (https://)')
 
-    slug = f"{date}-{title.lower().replace(' ', '-').replace('#', '')}"[:80]
-    path = ROOT / 'content' / 'events' / f"{slug}.md"
+    if not DATE_RE.match(date):
+        raise ValueError(f'event_date must be YYYY-MM-DD, got: {date}')
+
+    slug = re.sub(r'[^a-z0-9-]', '', f"{date}-{title.lower().replace(' ', '-')}")[:80]
+    target = safe_content_path(f"events/{slug}.md")
     content = f"""---
 title: {title}
 date: {date}
@@ -114,12 +135,12 @@ status: upcoming
 
 {summary}
 """
-    path.write_text(content, encoding='utf-8')
-    return [str(path.relative_to(ROOT))]
+    target.write_text(content, encoding='utf-8')
+    return [str(target.relative_to(ROOT))]
 
 
 def handle_update_copy(target: str, payload: dict):
-    copy = payload.get('copy', '').strip()
+    copy = strip_html(payload.get('copy', '')).strip()
     if not copy:
         raise ValueError('update_copy requires payload.copy')
     file_map = {
@@ -143,8 +164,11 @@ def main():
 
     data = json.loads(Path(args.intent_file).read_text(encoding='utf-8'))
     intent = data['intent']
-    target = data['target']
+    target = data.get('target', '')
     payload = data.get('payload', {})
+
+    if target and target not in ALLOWED_TARGETS:
+        raise ValueError(f'Invalid target: {target}. Allowed: {ALLOWED_TARGETS}')
 
     if intent == 'add_link':
         changed = handle_add_link(target, payload)

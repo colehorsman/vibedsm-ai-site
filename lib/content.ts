@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
 import { marked } from 'marked';
+import sanitizeHtml from 'sanitize-html';
 
 const ROOT = process.cwd();
 const CONTENT_DIR = path.join(ROOT, 'content');
@@ -45,7 +46,15 @@ export function getPageContent(page: 'community' | 'partners') {
   const { data, content } = readMarkdown(path.join(CONTENT_DIR, `${page}.md`));
   return {
     frontmatter: data as Record<string, string>,
-    html: marked.parse(content) as string
+    html: sanitizeHtml(marked.parse(content) as string, {
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+      allowedAttributes: {
+        ...sanitizeHtml.defaults.allowedAttributes,
+        img: ['src', 'alt', 'title'],
+        a: ['href', 'target', 'rel']
+      },
+      allowedSchemes: ['https', 'mailto']
+    })
   };
 }
 

@@ -15,20 +15,21 @@ permissions:
 jobs:
   apply-intent-and-open-pr:
     runs-on: ubuntu-latest
+    if: github.actor == github.repository_owner
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: '3.11'
 
       - name: Write intent file
+        env:
+          INTENT_JSON: ${{ github.event.inputs.intent_json }}
         run: |
           mkdir -p /tmp/intent
-          cat > /tmp/intent/intent.json << 'JSON'
-          ${{ github.event.inputs.intent_json }}
-          JSON
+          printf '%s\n' "$INTENT_JSON" > /tmp/intent/intent.json
 
       - name: Execute intent
         run: |
@@ -36,16 +37,16 @@ jobs:
           python3 scripts/validate_content.py
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@5e914681df9dc83ce62e1efa6a6ce7aee0e95814 # v6.1.0
         with:
           commit-message: "feat(site): apply intent-driven content update"
           title: "Intent update: website content change"
           body: |
             Automated content update from intent payload.
-            
+
             - Source: workflow_dispatch
             - Triggered by: ${{ github.actor }}
-            
+
             Please review and merge to deploy.
           branch: "bot/intent-update-${{ github.run_id }}"
           delete-branch: true

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import crypto from 'node:crypto';
 
 export async function POST(req: Request) {
   const auth = req.headers.get('authorization');
@@ -8,7 +9,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'REBUILD_TOKEN not configured' }, { status: 500 });
   }
 
-  if (auth !== `Bearer ${expected}`) {
+  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : '';
+  const a = Buffer.from(token);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 

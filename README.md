@@ -121,3 +121,9 @@ Content updates can be triggered via Slack or other integrations through the int
   - Best Practices
   - SEO
 - This functions as **website quality regression testing** over time.
+
+## Uptime monitoring + Slack alerts
+- Workflow: `.github/workflows/uptime-monitor.yml`
+- Script: `scripts/uptime_check.py`
+- Checks site endpoints every 15 minutes
+- Sends Slack alert when any monitored page is inaccessible

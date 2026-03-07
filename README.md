@@ -1,15 +1,17 @@
-# vibeDSM AI Site (Next.js + Markdown)
+# vibeDSM AI Site
 
-Best-in-class **AI-first** starter for `vibedsm.ai`:
-- Modern Next.js app-router site
-- Markdown-driven content
-- AI workflow contract and validation
-- GitHub + Vercel ready
+AI-first community site for [vibeDSM](https://vibedsm.ai) — a monthly meetup for developers, founders, designers, and AI-curious builders in Des Moines, Iowa.
 
-## Why this stack
-- **Modern UX:** Next.js routing/perf and easy expansion
-- **MD source-of-truth:** non-dev updates, agent-friendly edits
-- **AI operability:** guardrails in `AI_WORKFLOW.md`
+## Stack
+- **Next.js 14** (App Router, standalone output)
+- **Markdown-driven content** (gray-matter + marked)
+- **Intent-based automation** (Python scripts + GitHub Actions)
+- **Vercel** for hosting with auto-deploy on push to main
+- **Dependabot** for automated dependency security scanning
+
+## Live
+- **Site:** https://vibedsm.ai (or https://vibedsm-ai-site.vercel.app)
+- **Repo:** https://github.com/colehorsman/vibedsm-ai-site
 
 ## Run locally
 ```bash
@@ -18,47 +20,33 @@ npm run content:validate
 npm run dev
 ```
 
-## Content files to edit
-- `content/site.md`
-- `content/events/*.md`
-- `content/community.md`
-- `content/partners.md`
-
-## Required immediate edits
-- Replace Slack invite URLs in:
-  - `content/site.md`
-  - `content/community.md`
-- Replace second event placeholder:
-  - `content/events/2026-02-placeholder.md`
-
-## GitHub + Vercel deploy
-1. Push repo to GitHub
-2. Import repo in Vercel
-3. Framework preset: Next.js (auto-detected)
-4. Deploy
-5. Add domain `vibedsm.ai`
-
-## Cloudflare DNS for Vercel
-- `@` A → `76.76.21.21`
-- `www` CNAME → `cname.vercel-dns.com`
+## Content files
+All site content lives in markdown with YAML frontmatter:
+- `content/site.md` — homepage config (title, tagline, CTAs, contact)
+- `content/events/*.md` — individual event pages
+- `content/community.md` — community/Slack page
+- `content/partners.md` — sponsorship and hosting
 
 ## AI management model
-- AI updates markdown for routine changes
-- PR review for structural changes
-- content-check workflow validates content schema basics
+This site is designed to be managed by AI agents via the OpenClaw platform:
+- **Routine content updates** — AI edits markdown directly via intent system
+- **Structural/code changes** — require PR review
+- **All changes** — must pass `content-check` workflow validation
+- **Production deploys** — only from `main` branch via Vercel Git integration
 
-## Intent-driven automation (R1/Slack style)
-You can trigger automated content edits and open a PR with the `intent-pr` GitHub Action.
+### Intent-driven automation
+AI agents (or humans via R1/Slack) can trigger content edits that auto-open PRs:
 
-### Local test
-```bash
-python3 scripts/execute_intent.py --intent-file commands/examples/add-link-community.json
-python3 scripts/validate_content.py
-```
+**Supported intents:**
+| Intent | Description |
+|--------|-------------|
+| `add_link` | Add links to community/partners/events pages |
+| `update_cta` | Change primary CTAs on homepage |
+| `update_event` | Create or update event files |
+| `update_copy` | Append content to page copy |
 
-### GitHub Action trigger input
+**Trigger via GitHub Actions:**
 Workflow: `.github/workflows/intent-pr.yml`
-Input key: `intent_json`
 
 Example payload:
 ```json
@@ -69,13 +57,35 @@ Example payload:
   "reason": "Add Slack invite CTA",
   "payload": {
     "label": "Join vibeDSM Slack",
-    "url": "https://join.slack.com/t/REPLACE_ME"
+    "url": "https://join.slack.com/t/vibedsm/shared_invite/zt-3qxo7rc87-MmnYgPU4vZL_TiqVYKtY0Q"
   }
 }
 ```
 
-This will:
-1. apply markdown change
-2. run content validation
-3. open a PR for your approval
-4. deploy on merge (via Vercel Git integration)
+**Local test:**
+```bash
+python3 scripts/execute_intent.py --intent-file commands/examples/add-link-community.json
+python3 scripts/validate_content.py
+```
+
+## Deployment
+- Vercel auto-deploys on push to `main`
+- Dependabot opens PRs for dependency updates automatically
+
+### Custom domain (Cloudflare DNS)
+- `@` A → `76.76.21.21`
+- `www` CNAME → `cname.vercel-dns.com`
+
+## Policies
+- `policies/ai-edit-policy.yaml` — guardrails for AI edits (content-only, PR required, no silent deploys)
+- `AI_WORKFLOW.md` — AI update playbook and human-in-the-loop rules
+
+## Contributing
+This is an open-source project for the Des Moines AI community. PRs welcome for:
+- New event content
+- Design improvements
+- Accessibility fixes
+- New intent types for automation
+
+## OpenClaw Integration
+This site is managed by the **dev** agent (Forge-Dev) in the OpenClaw platform. Content updates can be triggered via Slack or the Rabbit R1 device through the intent system.

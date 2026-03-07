@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "content:validate": "python3 scripts/validate_content.py"
+    "content:validate": "python3 scripts/validate_content.py",
+    "qa:site": "node scripts/site_qa.mjs"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",
@@ -18,6 +19,7 @@
     "sanitize-html": "^2.17.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.54.2",
     "@types/node": "20.14.12",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",

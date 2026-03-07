@@ -1,0 +1,38 @@
+name: daily-site-qa
+
+on:
+  schedule:
+    - cron: '15 13 * * *' # daily 8:15am America/Chicago (approx UTC, adjust DST if needed)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run site QA
+        env:
+          SITE_URL: https://vibedsm.ai
+        run: npm run qa:site
+
+      - name: Upload QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibe-site-qa-report
+          path: qa-reports/*

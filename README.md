@@ -88,3 +88,14 @@ This is an open-source project for the Des Moines AI community. PRs welcome for:
 
 ## Automation
 Content updates can be triggered via Slack or other integrations through the intent system. See `AI_WORKFLOW.md` for the full playbook.
+
+## Daily QA (automated)
+- Workflow: `.github/workflows/daily-site-qa.yml`
+- Script: `scripts/site_qa.mjs`
+- Checks performed daily:
+  - Link validation
+  - Security header checks
+  - Browser console/runtime errors
+  - Core page rendering status
+  - Analytics signal detection
+- Reports are uploaded as GitHub Actions artifacts (`qa-reports/site-qa-report.md` and `.json`).

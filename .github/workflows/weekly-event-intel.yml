@@ -1,0 +1,31 @@
+name: weekly-event-intel
+
+on:
+  schedule:
+    - cron: '0 15 * * 1' # Mondays ~9am CT
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  intel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate weekly event intel report
+        run: python3 scripts/event_intel.py
+
+      - name: Open PR with intel report update
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(intel): weekly event source report refresh"
+          title: "Weekly event intel refresh"
+          body: |
+            Automated weekly event intel refresh.
+            
+            Please review report and add relevant events under `content/external-events/`.
+          branch: "bot/weekly-event-intel-${{ github.run_id }}"
+          delete-branch: true

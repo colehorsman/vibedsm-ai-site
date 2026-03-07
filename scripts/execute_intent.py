@@ -178,6 +178,30 @@ def main():
         changed = handle_update_event(payload)
     elif intent == 'update_copy':
         changed = handle_update_copy(target, payload)
+    elif intent == 'add_external_event':
+        title = payload.get('event_title', '').strip()
+        date = payload.get('event_date', '').strip()
+        city = payload.get('event_city', 'Des Moines').strip()
+        org = payload.get('event_org', 'Community').strip()
+        url = payload.get('url', '').strip()
+        summary = payload.get('event_summary', '').strip() or 'Community event listing.'
+        if not title or not date or not url.startswith('https://'):
+            raise ValueError('add_external_event requires event_title, event_date, and payload.url (https://)')
+        slug = f"{date}-{title.lower().replace(' ', '-').replace('#', '')}"[:80]
+        path = ROOT / 'content' / 'external-events' / f"{slug}.md"
+        content = f"""---
+title: {title}
+org: {org}
+city: {city}
+date: {date}
+url: {url}
+source: intent
+---
+
+{summary}
+"""
+        path.write_text(content, encoding='utf-8')
+        changed = [str(path.relative_to(ROOT))]
     else:
         raise ValueError(f'Unsupported intent: {intent}')
 

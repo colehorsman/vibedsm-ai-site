@@ -32,7 +32,8 @@ npm run dev
 ## Content files
 All site content lives in markdown with YAML frontmatter:
 - `content/site.md` — homepage config (title, tagline, CTAs, contact)
-- `content/events/*.md` — individual event pages
+- `content/events/*.md` — vibeDSM hosted events
+- `content/external-events/*.md` — other local AI events (ecosystem feed)
 - `content/community.md` — community/Slack page
 - `content/partners.md` — sponsorship and hosting
 
@@ -53,6 +54,7 @@ Content edits can be triggered programmatically via the intent system, auto-open
 | `update_cta` | Change primary CTAs on homepage |
 | `update_event` | Create or update event files |
 | `update_copy` | Append content to page copy |
+| `add_external_event` | Add an external/local AI event card |
 
 **Trigger via GitHub Actions:**
 Workflow: `.github/workflows/intent-pr.yml`

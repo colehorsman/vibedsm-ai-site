@@ -31,6 +31,17 @@ export type EventItem = {
   summary: string;
 };
 
+export type ExternalEventItem = {
+  slug: string;
+  title: string;
+  org: string;
+  city: string;
+  date: string;
+  url: string;
+  source: string;
+  summary: string;
+};
+
 function readMarkdown(filePath: string) {
   const raw = fs.readFileSync(filePath, 'utf8');
   const { data, content } = matter(raw);
@@ -85,4 +96,28 @@ export function getLatestLumaEventUrl(): string | null {
     (e) => e.luma_url.startsWith('https://luma.com/') && !e.luma_url.includes('REPLACE')
   );
   return valid?.luma_url ?? null;
+}
+
+export function getExternalEvents(cityFilter = 'Des Moines'): ExternalEventItem[] {
+  const eventsDir = path.join(CONTENT_DIR, 'external-events');
+  if (!fs.existsSync(eventsDir)) return [];
+  const files = fs.readdirSync(eventsDir).filter((f) => f.endsWith('.md'));
+
+  return files
+    .map((file) => {
+      const slug = file.replace(/\.md$/, '');
+      const { data, content } = readMarkdown(path.join(eventsDir, file));
+      return {
+        slug,
+        title: String(data.title || slug),
+        org: String(data.org || 'Community'),
+        city: String(data.city || ''),
+        date: String(data.date || ''),
+        url: String(data.url || '#'),
+        source: String(data.source || 'manual'),
+        summary: content.trim()
+      };
+    })
+    .filter((e) => !cityFilter || e.city.toLowerCase().includes(cityFilter.toLowerCase()))
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
 }

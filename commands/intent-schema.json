@@ -6,7 +6,7 @@
   "properties": {
     "intent": {
       "type": "string",
-      "enum": ["add_link", "update_event", "update_cta", "update_copy"]
+      "enum": ["add_link", "update_event", "update_cta", "update_copy", "add_external_event"]
     },
     "target": {
       "type": "string",

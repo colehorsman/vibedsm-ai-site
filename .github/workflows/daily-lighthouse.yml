@@ -23,7 +23,20 @@ jobs:
         run: npm ci
 
       - name: Run Lighthouse CI
-        run: npx @lhci/cli@0.14.x autorun --config=./lighthouserc.json
+        id: lhci
+        continue-on-error: true
+        run: |
+          mkdir -p .lighthouseci
+          set -o pipefail
+          npx @lhci/cli@0.14.x autorun --config=./lighthouserc.json | tee .lighthouseci/lhci.log
+
+      - name: Upload Lighthouse artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibe-lighthouse-report
+          path: |
+            .lighthouseci/**
 
       - name: Post Lighthouse summary to Slack
         if: always() && env.SLACK_WEBHOOK_URL != ''
@@ -31,16 +44,51 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           python3 - <<'PY'
-          import json, os, pathlib, urllib.request
+          import json, os, pathlib, re, urllib.request
+
+          run_url = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           manifest = pathlib.Path('.lighthouseci/manifest.json')
-          status = '✅ PASS'
-          text = '*vibeDSM Lighthouse* — no manifest found (check run logs)'
+          log_file = pathlib.Path('.lighthouseci/lhci.log')
+
+          lines = ["*vibeDSM Lighthouse*"]
+          report_links = []
+
           if manifest.exists():
-            data = json.loads(manifest.read_text())
-            urls = [x.get('url','') for x in data]
-            text = "*vibeDSM Lighthouse*\n" + "\n".join(f"• Audited: {u}" for u in urls[:6]) + f"\n• Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            try:
+              data = json.loads(manifest.read_text())
+              urls = [x.get('url','') for x in data if x.get('url')]
+              for u in urls[:8]:
+                lines.append(f"• Audited: {u}")
+            except Exception as e:
+              lines.append(f"• Manifest parse issue: {e}")
+
+          if log_file.exists():
+            txt = log_file.read_text(errors='ignore')
+            report_links = re.findall(r'https://storage\.googleapis\.com/lighthouse-infrastructure\.appspot\.com/reports/\S+', txt)
+            if report_links:
+              lines.append("• Public reports:")
+              for u in report_links[:4]:
+                lines.append(f"  - {u}")
+
+            if 'No URLs provided to collect' in txt:
+              lines.append('• Warning: no URLs were collected by LHCI')
+            if 'Assertion failed' in txt:
+              lines.append('• Result: assertions failed (regression detected)')
+
+          if len(lines) == 1:
+            lines.append('• No manifest/report links found. Check uploaded artifact and run logs.')
+
+          lines.append(f"• Run: {run_url}")
+          text = "\n".join(lines)
+
           payload = json.dumps({'text': text}).encode('utf-8')
           req = urllib.request.Request(os.environ['SLACK_WEBHOOK_URL'], data=payload, headers={'Content-Type':'application/json'})
           with urllib.request.urlopen(req) as resp:
             print('Slack post status:', resp.status)
           PY
+
+      - name: Fail workflow if Lighthouse step failed
+        if: steps.lhci.outcome == 'failure'
+        run: |
+          echo "Lighthouse CI failed. See .lighthouseci/lhci.log artifact for details."
+          exit 1

@@ -1,0 +1,19 @@
+{
+  "sources": [
+    {
+      "name": "vibeNYC",
+      "url": "https://vibenyc.com",
+      "type": "site"
+    },
+    {
+      "name": "Luma Search - vibedsm",
+      "url": "https://luma.com/search?q=vibedsm",
+      "type": "search"
+    },
+    {
+      "name": "Luma Search - Des Moines AI",
+      "url": "https://luma.com/search?q=des%20moines%20ai",
+      "type": "search"
+    }
+  ]
+}

@@ -32,7 +32,7 @@ jobs:
           SITE_URL: https://vibedsm.ai
         run: npm run qa:site
 
-      - name: Create/Update security issue when findings exist
+      - name: Create/Update QA issues when findings exist
         if: always()
         uses: actions/github-script@v7
         with:
@@ -50,55 +50,90 @@ jobs:
             const consoleErrors = report.categories?.errors?.console || [];
             const pageErrors = report.categories?.errors?.page || [];
 
-            const hasSecurity = secWarnings.length > 0;
-            if (!hasSecurity) {
-              core.info('No security findings; skipping security issue creation.');
-              return;
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            async function upsertIssue({prefix, labels, title, body}) {
+              const { data: openIssues } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open'
+              });
+              const existing = openIssues.find(i => i.title.startsWith(prefix));
+              if (existing) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  body
+                });
+                core.info(`Updated existing issue #${existing.number} (${prefix})`);
+              } else {
+                const created = await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title,
+                  body,
+                  labels
+                });
+                core.info(`Created issue #${created.data.number} (${prefix})`);
+              }
             }
 
-            const title = `[QA][Security] ${secWarnings.length} security finding(s) on ${report.site}`;
-            const body = [
-              `Automated daily QA detected security findings.`,
-              '',
-              `- Site: ${report.site}`,
-              `- Run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              `- Security warnings: ${secWarnings.length}`,
-              `- Link failures: ${linkFails.length}`,
-              `- Console errors: ${consoleErrors.length}`,
-              `- Page errors: ${pageErrors.length}`,
-              '',
-              '## Security findings',
-              ...secWarnings.map(w => `- ${w}`),
-              '',
-              'Owner recommendation: route to security agent (`red-team`) for triage and remediation PR.'
-            ].join('\n');
-
-            const { data: openIssues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: 'security,automated-qa'
-            });
-
-            const existing = openIssues.find(i => i.title.startsWith('[QA][Security]'));
-
-            if (existing) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: existing.number,
+            if (secWarnings.length > 0) {
+              const title = `[QA][Security] ${secWarnings.length} finding(s) on ${report.site}`;
+              const body = [
+                `Automated daily QA detected security findings.`,
+                '',
+                `- Site: ${report.site}`,
+                `- Run: ${runUrl}`,
+                `- Security warnings: ${secWarnings.length}`,
+                '',
+                '## Security findings',
+                ...secWarnings.map(w => `- ${w}`),
+                '',
+                'Route: security agent (`red-team`) triage + remediation PR.'
+              ].join('\n');
+              await upsertIssue({
+                prefix: '[QA][Security]',
+                labels: ['security', 'automated-qa'],
+                title,
                 body
               });
-              core.info(`Updated existing security issue #${existing.number}`);
             } else {
-              const created = await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+              core.info('No security findings.');
+            }
+
+            const reliabilityCount = linkFails.length + consoleErrors.length + pageErrors.length;
+            if (reliabilityCount > 0) {
+              const title = `[QA][Reliability] ${reliabilityCount} issue(s) on ${report.site}`;
+              const body = [
+                `Automated daily QA detected reliability issues.`,
+                '',
+                `- Site: ${report.site}`,
+                `- Run: ${runUrl}`,
+                `- Link failures: ${linkFails.length}`,
+                `- Console errors: ${consoleErrors.length}`,
+                `- Page errors: ${pageErrors.length}`,
+                '',
+                '## Link failures',
+                ...(linkFails.length ? linkFails.map(x => `- ${x.url} (${x.status})`) : ['- none']),
+                '',
+                '## Console errors',
+                ...(consoleErrors.length ? consoleErrors.map(x => `- ${x.page}: ${x.text}`) : ['- none']),
+                '',
+                '## Page errors',
+                ...(pageErrors.length ? pageErrors.map(x => `- ${x.page}: ${x.text}`) : ['- none']),
+                '',
+                'Route: dev/content owners triage and remediation PR.'
+              ].join('\n');
+              await upsertIssue({
+                prefix: '[QA][Reliability]',
+                labels: ['bug', 'automated-qa'],
                 title,
-                body,
-                labels: ['security', 'automated-qa']
+                body
               });
-              core.info(`Created security issue #${created.data.number}`);
+            } else {
+              core.info('No reliability findings.');
             }
 
       - name: Upload QA artifacts

@@ -110,7 +110,9 @@ Content updates can be triggered via Slack or other integrations through the int
   - Core page rendering status
   - Analytics signal detection
 - Reports are uploaded as GitHub Actions artifacts (`qa-reports/site-qa-report.md` and `.json`).
-- If security findings exist, automation creates/updates a GitHub issue (`security`, `automated-qa`).
+- If findings exist, automation creates/updates GitHub issues by category:
+  - `security` + `automated-qa` for security findings
+  - `bug` + `automated-qa` for reliability findings (links/errors)
 
 ## Daily Lighthouse (regression-quality guard)
 - Workflow: `.github/workflows/daily-lighthouse.yml`

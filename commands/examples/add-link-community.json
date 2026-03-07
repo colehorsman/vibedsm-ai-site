@@ -1,0 +1,10 @@
+{
+  "intent": "add_link",
+  "target": "community",
+  "requestedBy": "cole",
+  "reason": "Add Slack invite CTA",
+  "payload": {
+    "label": "Join vibeDSM Slack",
+    "url": "https://join.slack.com/t/REPLACE_ME"
+  }
+}

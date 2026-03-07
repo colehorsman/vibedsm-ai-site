@@ -1,0 +1,35 @@
+version: 1
+name: vibedsm-ai-edit-policy
+
+principles:
+  - ai_edits_via_pr_only
+  - human_approval_required_for_merge
+  - no_silent_production_edits
+
+allowed_without_extra_confirmation:
+  - content/site.md
+  - content/community.md
+  - content/partners.md
+  - content/events/*.md
+
+requires_explicit_human_confirmation:
+  - app/**/*.tsx
+  - app/globals.css
+  - lib/**/*.ts
+  - package.json
+  - next.config.mjs
+
+validation:
+  - python3 scripts/validate_content.py
+  - npm run build
+
+audit_log:
+  path: logs/intent-actions.jsonl
+  fields:
+    - ts
+    - requestedBy
+    - intent
+    - target
+    - changedFiles
+    - branch
+    - prUrl

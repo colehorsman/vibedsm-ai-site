@@ -1,0 +1,51 @@
+name: intent-pr
+
+on:
+  workflow_dispatch:
+    inputs:
+      intent_json:
+        description: 'Intent JSON payload'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  apply-intent-and-open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Write intent file
+        run: |
+          mkdir -p /tmp/intent
+          cat > /tmp/intent/intent.json << 'JSON'
+          ${{ github.event.inputs.intent_json }}
+          JSON
+
+      - name: Execute intent
+        run: |
+          python3 scripts/execute_intent.py --intent-file /tmp/intent/intent.json
+          python3 scripts/validate_content.py
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "feat(site): apply intent-driven content update"
+          title: "Intent update: website content change"
+          body: |
+            Automated content update from intent payload.
+            
+            - Source: workflow_dispatch
+            - Triggered by: ${{ github.actor }}
+            
+            Please review and merge to deploy.
+          branch: "bot/intent-update-${{ github.run_id }}"
+          delete-branch: true

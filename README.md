@@ -28,14 +28,14 @@ All site content lives in markdown with YAML frontmatter:
 - `content/partners.md` — sponsorship and hosting
 
 ## AI management model
-This site is designed to be managed by AI agents via the OpenClaw platform:
+This site is designed to be managed by AI agents:
 - **Routine content updates** — AI edits markdown directly via intent system
 - **Structural/code changes** — require PR review
 - **All changes** — must pass `content-check` workflow validation
 - **Production deploys** — only from `main` branch via Vercel Git integration
 
 ### Intent-driven automation
-AI agents (or humans via R1/Slack) can trigger content edits that auto-open PRs:
+Content edits can be triggered programmatically via the intent system, auto-opening PRs:
 
 **Supported intents:**
 | Intent | Description |
@@ -57,7 +57,7 @@ Example payload:
   "reason": "Add Slack invite CTA",
   "payload": {
     "label": "Join vibeDSM Slack",
-    "url": "https://join.slack.com/t/vibedsm/shared_invite/zt-3qxo7rc87-MmnYgPU4vZL_TiqVYKtY0Q"
+    "url": "https://example.com/your-invite-link"
   }
 }
 ```
@@ -72,9 +72,8 @@ python3 scripts/validate_content.py
 - Vercel auto-deploys on push to `main`
 - Dependabot opens PRs for dependency updates automatically
 
-### Custom domain (Cloudflare DNS)
-- `@` A → `76.76.21.21`
-- `www` CNAME → `cname.vercel-dns.com`
+### Custom domain
+DNS is managed via Cloudflare. See Vercel docs for custom domain setup.
 
 ## Policies
 - `policies/ai-edit-policy.yaml` — guardrails for AI edits (content-only, PR required, no silent deploys)
@@ -87,5 +86,5 @@ This is an open-source project for the Des Moines AI community. PRs welcome for:
 - Accessibility fixes
 - New intent types for automation
 
-## OpenClaw Integration
-This site is managed by the **dev** agent (Forge-Dev) in the OpenClaw platform. Content updates can be triggered via Slack or the Rabbit R1 device through the intent system.
+## Automation
+Content updates can be triggered via Slack or other integrations through the intent system. See `AI_WORKFLOW.md` for the full playbook.

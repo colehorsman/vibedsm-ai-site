@@ -2,6 +2,15 @@
 
 AI-first community site for [vibeDSM](https://vibedsm.ai) — a monthly meetup for developers, founders, designers, and AI-curious builders in Des Moines, Iowa.
 
+## What this demonstrates
+This project is a **mostly hands-off, AI-managed website**:
+- You request changes in chat (e.g., "add link X to page Y")
+- AI applies markdown/content updates
+- GitHub PR is opened automatically for approval
+- Merge auto-deploys to production (Vercel)
+- Daily QA + security + Lighthouse checks run automatically
+- Results are posted to Slack
+
 ## Stack
 - **Next.js 14** (App Router, standalone output)
 - **Markdown-driven content** (gray-matter + marked)
@@ -99,3 +108,14 @@ Content updates can be triggered via Slack or other integrations through the int
   - Core page rendering status
   - Analytics signal detection
 - Reports are uploaded as GitHub Actions artifacts (`qa-reports/site-qa-report.md` and `.json`).
+- If security findings exist, automation creates/updates a GitHub issue (`security`, `automated-qa`).
+
+## Daily Lighthouse (regression-quality guard)
+- Workflow: `.github/workflows/daily-lighthouse.yml`
+- Config: `lighthouserc.json`
+- Categories tracked:
+  - Performance
+  - Accessibility
+  - Best Practices
+  - SEO
+- This functions as **website quality regression testing** over time.

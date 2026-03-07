@@ -1,0 +1,46 @@
+name: daily-lighthouse
+
+on:
+  schedule:
+    - cron: '30 13 * * *' # daily ~8:30am CT
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Lighthouse CI
+        run: npx @lhci/cli@0.14.x autorun --config=./lighthouserc.json
+
+      - name: Post Lighthouse summary to Slack
+        if: always() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, urllib.request
+          manifest = pathlib.Path('.lighthouseci/manifest.json')
+          status = '✅ PASS'
+          text = '*vibeDSM Lighthouse* — no manifest found (check run logs)'
+          if manifest.exists():
+            data = json.loads(manifest.read_text())
+            urls = [x.get('url','') for x in data]
+            text = "*vibeDSM Lighthouse*\n" + "\n".join(f"• Audited: {u}" for u in urls[:6]) + f"\n• Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          payload = json.dumps({'text': text}).encode('utf-8')
+          req = urllib.request.Request(os.environ['SLACK_WEBHOOK_URL'], data=payload, headers={'Content-Type':'application/json'})
+          with urllib.request.urlopen(req) as resp:
+            print('Slack post status:', resp.status)
+          PY

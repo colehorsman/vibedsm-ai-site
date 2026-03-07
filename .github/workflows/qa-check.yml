@@ -1,0 +1,67 @@
+name: QA Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 12 * * *'  # Daily at noon UTC
+
+jobs:
+  link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build site
+        run: npm run build
+
+      - name: Validate content
+        run: python3 scripts/validate_content.py
+
+      - name: Start server and test pages
+        run: |
+          npm start &
+          sleep 5
+
+          FAILED=0
+          for path in "/" "/events" "/community" "/partners"; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3000${path}")
+            if [ "$STATUS" != "200" ]; then
+              echo "FAIL: ${path} returned HTTP ${STATUS}"
+              FAILED=1
+            else
+              echo "OK: ${path} → HTTP ${STATUS}"
+            fi
+          done
+
+          # Check no placeholder values remain
+          if grep -r "REPLACE_ME\|REPLACE_SECOND\|YOUR-USER-OR-ORG" content/; then
+            echo "FAIL: Placeholder values found in content"
+            FAILED=1
+          else
+            echo "OK: No placeholder values"
+          fi
+
+          # Check external links from rendered pages
+          for path in "/" "/events" "/community" "/partners"; do
+            curl -s "http://localhost:3000${path}" | grep -oE 'href="https?://[^"]+"' | sed 's/href="//;s/"//' | sort -u | while read url; do
+              LSTATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 10 "$url" 2>/dev/null)
+              if [ "$LSTATUS" != "200" ] && [ "$LSTATUS" != "301" ] && [ "$LSTATUS" != "302" ]; then
+                echo "WARN: ${path} link ${url} → HTTP ${LSTATUS}"
+              else
+                echo "OK: ${url} → HTTP ${LSTATUS}"
+              fi
+            done
+          done
+
+          kill %1 2>/dev/null || true
+          exit $FAILED

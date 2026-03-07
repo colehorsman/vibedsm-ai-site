@@ -13,6 +13,7 @@ export default function Nav({ active }: { active: 'home' | 'events' | 'community
         <Link className={cls('events')} href="/events">Events</Link>
         <Link className={cls('community')} href="/community">Community</Link>
         <Link className={cls('partners')} href="/partners">Partners</Link>
+        <a className="pill" href="https://github.com/colehorsman/vibedsm-ai-site" target="_blank">GitHub</a>
       </nav>
     </header>
   );

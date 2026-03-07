@@ -69,3 +69,11 @@ export function getEvents(): EventItem[] {
     })
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 }
+
+export function getLatestLumaEventUrl(): string | null {
+  const events = getEvents();
+  const valid = events.find(
+    (e) => e.luma_url.startsWith('https://luma.com/') && !e.luma_url.includes('REPLACE')
+  );
+  return valid?.luma_url ?? null;
+}

@@ -1,8 +1,10 @@
 import Nav from '@/components/Nav';
-import { getSiteConfig } from '@/lib/content';
+import { getLatestLumaEventUrl, getSiteConfig } from '@/lib/content';
 
 export default function HomePage() {
   const site = getSiteConfig();
+  const latestLumaUrl = getLatestLumaEventUrl();
+  const registerUrl = latestLumaUrl ?? site.primary_cta_url;
 
   return (
     <>
@@ -12,7 +14,7 @@ export default function HomePage() {
         <h1>{site.hero_title}<br /><span className="gradient">{site.hero_subtitle}</span></h1>
         <p className="lead">{site.tagline}</p>
         <div className="actions">
-          <a className="btn btn-primary" href={site.primary_cta_url} target="_blank">{site.primary_cta_label}</a>
+          <a className="btn btn-primary" href={registerUrl} target="_blank">{site.primary_cta_label}</a>
           <a className="btn btn-secondary" href={site.community_cta_url} target="_blank">{site.community_cta_label}</a>
           <a className="btn btn-secondary" href="/events">See Events</a>
         </div>

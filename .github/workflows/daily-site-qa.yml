@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   qa:
@@ -30,6 +31,75 @@ jobs:
         env:
           SITE_URL: https://vibedsm.ai
         run: npm run qa:site
+
+      - name: Create/Update security issue when findings exist
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'qa-reports/site-qa-report.json';
+            if (!fs.existsSync(path)) {
+              core.info('No QA report found; skipping issue automation.');
+              return;
+            }
+
+            const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const secWarnings = report.categories?.security?.warnings || [];
+            const linkFails = report.categories?.links?.failed || [];
+            const consoleErrors = report.categories?.errors?.console || [];
+            const pageErrors = report.categories?.errors?.page || [];
+
+            const hasSecurity = secWarnings.length > 0;
+            if (!hasSecurity) {
+              core.info('No security findings; skipping security issue creation.');
+              return;
+            }
+
+            const title = `[QA][Security] ${secWarnings.length} security finding(s) on ${report.site}`;
+            const body = [
+              `Automated daily QA detected security findings.`,
+              '',
+              `- Site: ${report.site}`,
+              `- Run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              `- Security warnings: ${secWarnings.length}`,
+              `- Link failures: ${linkFails.length}`,
+              `- Console errors: ${consoleErrors.length}`,
+              `- Page errors: ${pageErrors.length}`,
+              '',
+              '## Security findings',
+              ...secWarnings.map(w => `- ${w}`),
+              '',
+              'Owner recommendation: route to security agent (`red-team`) for triage and remediation PR.'
+            ].join('\n');
+
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'security,automated-qa'
+            });
+
+            const existing = openIssues.find(i => i.title.startsWith('[QA][Security]'));
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body
+              });
+              core.info(`Updated existing security issue #${existing.number}`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['security', 'automated-qa']
+              });
+              core.info(`Created security issue #${created.data.number}`);
+            }
 
       - name: Upload QA artifacts
         if: always()

@@ -22,6 +22,7 @@
 - GitHub Action: `.github/workflows/daily-site-qa.yml`
 - Script: `scripts/site_qa.mjs`
 - Output artifacts: `qa-reports/site-qa-report.{json,md}`
+- Auto-ticketing: creates/updates GitHub issue labeled `security, automated-qa` when security findings are detected
 
 ## Optional hardening to add next
 - Add Lighthouse CI (performance + accessibility + SEO)

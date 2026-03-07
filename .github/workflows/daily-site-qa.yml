@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   qa:
+    environment: 12769332225
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,3 +37,48 @@ jobs:
         with:
           name: vibe-site-qa-report
           path: qa-reports/*
+
+      - name: Post QA summary to Slack
+        if: always() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, urllib.request
+
+          report_path = pathlib.Path('qa-reports/site-qa-report.json')
+          if not report_path.exists():
+            print('No report found; skipping Slack post')
+            raise SystemExit(0)
+
+          r = json.loads(report_path.read_text())
+          links_checked = r['categories']['links']['checked']
+          links_failed = len(r['categories']['links']['failed'])
+          console_errors = len(r['categories']['errors']['console'])
+          page_errors = len(r['categories']['errors']['page'])
+          sec_warn = len(r['categories']['security']['warnings'])
+          analytics = r['categories']['analytics']['detected']
+
+          status = '✅ PASS'
+          if links_failed or console_errors or page_errors or sec_warn:
+            status = '⚠️ NEEDS REVIEW'
+
+          text = (
+            f"*vibeDSM Daily QA* — {status}\n"
+            f"• Site: {r['site']}\n"
+            f"• Links: {links_checked} checked, {links_failed} failed\n"
+            f"• Errors: {console_errors} console, {page_errors} page\n"
+            f"• Security warnings: {sec_warn}\n"
+            f"• Analytics detected: {'yes' if analytics else 'no'}\n"
+            f"• Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          )
+
+          payload = json.dumps({'text': text}).encode('utf-8')
+          req = urllib.request.Request(
+            os.environ['SLACK_WEBHOOK_URL'],
+            data=payload,
+            headers={'Content-Type':'application/json'}
+          )
+          with urllib.request.urlopen(req) as resp:
+            print('Slack post status:', resp.status)
+          PY

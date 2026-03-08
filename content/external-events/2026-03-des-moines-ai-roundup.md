@@ -3,7 +3,7 @@ title: Des Moines AI Builders Coffee
 org: Des Moines AI Builders
 city: Des Moines
 date: 2026-03-20
-url: https://example.com/desmoines-ai-builders
+url: https://www.meetup.com/des-moines-artificial-intelligence-group/
 source: manual
 ---
 

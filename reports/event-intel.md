@@ -1,6 +1,6 @@
 # Weekly Event Intel
 
-- Generated: 2026-03-07T18:04:48.204236Z
+- Generated: 2026-11-09T23:39:20.483328Z
 - Purpose: discover local and peer AI meetups to feature on vibeDSM
 
 ## Tracked Sources
